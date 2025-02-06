@@ -1,0 +1,10 @@
+/an102
+/an103
+/an22
+/an21
+/time set day
+/time set night
+/time set day
+/l 123123
+/l 123123tt
+/time set day

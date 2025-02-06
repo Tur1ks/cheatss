@@ -1,0 +1,104 @@
+---- Minecraft Crash Report ----
+// Why did you do that?
+
+Time: 2024-12-27 17:33:20
+Description: Exception in server tick loop
+
+java.lang.NoClassDefFoundError: net/minecraft/world/damagesource/CombatRules
+	at net.minecraft.world.entity.LivingEntity.getDamageAfterArmorAbsorb(LivingEntity.java:1640)
+	at net.minecraft.world.entity.LivingEntity.actuallyHurt(LivingEntity.java:1689)
+	at net.minecraft.world.entity.LivingEntity.hurt(LivingEntity.java:1141)
+	at net.minecraft.world.entity.player.Player.attack(Player.java:1200)
+	at net.minecraft.server.level.ServerPlayer.attack(ServerPlayer.java:1673)
+	at net.minecraft.server.network.ServerGamePacketListenerImpl$1.onAttack(ServerGamePacketListenerImpl.java:1550)
+	at net.minecraft.network.protocol.game.ServerboundInteractPacket$1.dispatch(ServerboundInteractPacket.java:29)
+	at net.minecraft.network.protocol.game.ServerboundInteractPacket.dispatch(ServerboundInteractPacket.java:88)
+	at net.minecraft.server.network.ServerGamePacketListenerImpl.handleInteract(ServerGamePacketListenerImpl.java:1508)
+	at net.minecraft.network.protocol.game.ServerboundInteractPacket.handle(ServerboundInteractPacket.java:75)
+	at net.minecraft.network.protocol.game.ServerboundInteractPacket.handle(ServerboundInteractPacket.java:14)
+	at net.minecraft.network.protocol.PacketUtils.lambda$ensureRunningOnSameThread$0(PacketUtils.java:35)
+	at net.optifine.util.PacketRunnable.run(PacketRunnable.java:16)
+	at net.minecraft.server.TickTask.run(TickTask.java:18)
+	at net.minecraft.util.thread.BlockableEventLoop.doRunTask(BlockableEventLoop.java:158)
+	at net.minecraft.util.thread.ReentrantBlockableEventLoop.doRunTask(ReentrantBlockableEventLoop.java:24)
+	at net.minecraft.server.MinecraftServer.doRunTask(MinecraftServer.java:852)
+	at net.minecraft.server.MinecraftServer.doRunTask(MinecraftServer.java:168)
+	at net.minecraft.util.thread.BlockableEventLoop.pollTask(BlockableEventLoop.java:132)
+	at net.minecraft.server.MinecraftServer.pollTaskInternal(MinecraftServer.java:835)
+	at net.minecraft.server.MinecraftServer.pollTask(MinecraftServer.java:829)
+	at net.minecraft.util.thread.BlockableEventLoop.managedBlock(BlockableEventLoop.java:142)
+	at net.minecraft.server.MinecraftServer.managedBlock(MinecraftServer.java:801)
+	at net.minecraft.server.MinecraftServer.waitUntilNextTick(MinecraftServer.java:806)
+	at net.minecraft.server.MinecraftServer.runServer(MinecraftServer.java:696)
+	at net.minecraft.server.MinecraftServer.lambda$spin$2(MinecraftServer.java:264)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: java.lang.ClassNotFoundException: net.minecraft.world.damagesource.CombatRules
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641)
+	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:188)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526)
+	... 27 more
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- System Details --
+Details:
+	Minecraft Version: 1.21.1
+	Minecraft Version ID: 1.21.1
+	Operating System: Windows 11 (amd64) version 10.0
+	Java Version: 21.0.5, Amazon.com Inc.
+	Java VM Version: OpenJDK 64-Bit Server VM (mixed mode, sharing), Amazon.com Inc.
+	Memory: 122575976 bytes (116 MiB) / 534773760 bytes (510 MiB) up to 4271898624 bytes (4074 MiB)
+	CPUs: 20
+	Processor Vendor: GenuineIntel
+	Processor Name: Intel(R) Xeon(R) CPU E5-2666 v3 @ 2.90GHz
+	Identifier: Intel64 Family 6 Model 63 Stepping 2
+	Microarchitecture: Haswell (Server)
+	Frequency (GHz): 2.89
+	Number of physical packages: 1
+	Number of physical CPUs: 10
+	Number of logical CPUs: 20
+	Graphics card #0 name: NVIDIA GeForce RTX 3060
+	Graphics card #0 vendor: NVIDIA
+	Graphics card #0 VRAM (MiB): 12288.00
+	Graphics card #0 deviceId: VideoController1
+	Graphics card #0 versionInfo: 32.0.15.6094
+	Memory slot #0 capacity (MiB): 8192.00
+	Memory slot #0 clockSpeed (GHz): 2.67
+	Memory slot #0 type: DDR4
+	Memory slot #1 capacity (MiB): 8192.00
+	Memory slot #1 clockSpeed (GHz): 2.67
+	Memory slot #1 type: DDR4
+	Virtual memory max (MiB): 28579.82
+	Virtual memory used (MiB): 19176.30
+	Swap memory total (MiB): 12288.00
+	Swap memory used (MiB): 583.13
+	Space in storage for jna.tmpdir (MiB): <path not set>
+	Space in storage for org.lwjgl.system.SharedLibraryExtractPath (MiB): <path not set>
+	Space in storage for io.netty.native.workdir (MiB): <path not set>
+	Space in storage for java.io.tmpdir (MiB): available: 420608.81, total: 976154.63
+	Space in storage for workdir (MiB): available: 420608.81, total: 976154.63
+	JVM Flags: 0 total; 
+	Server Running: true
+	Player Count: 1 / 8; [ServerPlayer['Exlenty_25Dza'/18, l='ServerLevel[New World]', x=83.11, y=-58.98, z=-7.09]]
+	Active Data Packs: vanilla
+	Available Data Packs: bundle, trade_rebalance, vanilla
+	Enabled Feature Flags: minecraft:vanilla
+	World Generation: Stable
+	World Seed: -4096434911596989395
+	Type: Integrated Server (map_client.txt)
+	Is Modded: Definitely; Client brand changed to 'optifine'; Server jar signature invalidated
+	Launched Version: mcp
+	OptiFine Version: OptiFine_1.21.1_HD_U_J1
+	OptiFine Build: null
+	Render Distance Chunks: 2
+	Mipmaps: 4
+	Anisotropic Filtering: 1
+	Antialiasing: 0
+	Multitexture: false
+	Shaders: null
+	OpenGlVersion: 3.2.0 NVIDIA 560.94
+	OpenGlRenderer: NVIDIA GeForce RTX 3060/PCIe/SSE2
+	OpenGlVendor: NVIDIA Corporation
+	CpuCount: 20
