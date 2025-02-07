@@ -165,6 +165,7 @@ import net.minecraft.client.telemetry.ClientTelemetryManager;
 import net.minecraft.client.telemetry.TelemetryProperty;
 import net.minecraft.client.telemetry.events.GameLoadTimesEvent;
 import net.minecraft.client.tutorial.Tutorial;
+import net.minecraft.client.util.WindowStyle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -738,6 +739,9 @@ public class Minecraft extends ReentrantBlockableEventLoop<Runnable> implements 
     }
 
     public void run() {
+        WindowStyle.setAcrylicEffect(this.getWindow().getWindow());
+
+
         this.gameThread = Thread.currentThread();
         if (Runtime.getRuntime().availableProcessors() > 4) {
             this.gameThread.setPriority(10);

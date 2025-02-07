@@ -263,7 +263,7 @@ public abstract class AbstractContainerScreen<T extends AbstractContainerMenu> e
     }
 
     @Nullable
-    private Slot findSlot(double pMouseX, double pMouseY) {
+    public Slot findSlot(double pMouseX, double pMouseY) {
         for (int i = 0; i < this.menu.slots.size(); i++) {
             Slot slot = this.menu.slots.get(i);
             if (this.isHovering(slot, pMouseX, pMouseY) && slot.isActive()) {
