@@ -4,6 +4,7 @@ package foby.client.module.modules;
 import foby.client.module.Module;
 import foby.client.module.modules.combat.Aura;
 import foby.client.module.modules.movement.*;
+import foby.client.module.modules.render.Arrows;
 import foby.client.module.modules.render.ESP;
 import foby.client.module.modules.render.HUD;
 import foby.client.module.modules.render.Test;
@@ -23,6 +24,7 @@ public class ModuleManager {
     public Speed speed;
     public HUD hud;
     public ESP esp;
+    public Arrows arrows;
 
     public ModuleManager() {
         modules.addAll(Arrays.asList(
@@ -30,7 +32,8 @@ public class ModuleManager {
                 test = new Test(),
                 aura = new Aura(),
                 speed = new Speed(),
-                esp = new ESP()
+                esp = new ESP(),
+                arrows = new Arrows()
         ));
     }
 

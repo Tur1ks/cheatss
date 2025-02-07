@@ -45,7 +45,6 @@ public class Foby {
         }
     }
 
-    @EventHandler
     public static void handleChatMessage(String message) {
         if (message.startsWith(CommandRegister.PREFIX)) {
             String[] args = message.substring(1).split(" ");

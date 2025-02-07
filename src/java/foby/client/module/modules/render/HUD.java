@@ -12,6 +12,8 @@ import foby.client.utils.fonts.FontRenderers;
 import foby.client.utils.render.DrawHelper;
 import net.minecraft.client.gui.GuiGraphics;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 
@@ -23,6 +25,8 @@ public class HUD extends Module {
     BooleanSetting watermark = new BooleanSetting("Watermark", "Отображение ватермарки", true);
     BooleanSetting moduleList = new BooleanSetting("Module List", "Список активных модулей", true);
     BooleanSetting coordinates = new BooleanSetting("Coordinates", "Показывать координаты", true);
+
+    private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     public HUD() {
         addSettings(watermark, moduleList, coordinates);
@@ -47,13 +51,13 @@ public class HUD extends Module {
     }
 
     private void renderWatermark(GuiGraphics graphics) {
-        String clientName = "SkyFlow Client";
+        String time = LocalTime.now().format(timeFormatter);
+        String clientName = "SkyFlow Client | " + time;
         float watermarkX = 5;
         float watermarkY = 5;
         float width = FontRenderers.info(msSemi, 20).getStringWidth(clientName) + 10;
         Theme currentTheme = themesUtil.getCurrentStyle();
 
-        // Draw shadow
         DrawHelper.drawShadow(
                 graphics.pose(),
                 watermarkX,
@@ -61,13 +65,11 @@ public class HUD extends Module {
                 width,
                 20,
                 4,
-                10f, // Shadow radius
-                8,   // Shadow strength
+                10f,
+                8,
                 currentTheme.colors[3]
         );
 
-
-        // Draw text
         FontRenderers.info(msSemi, 20).drawString(
                 graphics.pose(),
                 clientName,
@@ -76,7 +78,6 @@ public class HUD extends Module {
                 currentTheme.colors[1]
         );
     }
-
 
     private void renderModuleList(GuiGraphics graphics) {
         List<Module> enabledModules = ModuleManager.getModules().stream()
@@ -93,13 +94,15 @@ public class HUD extends Module {
             String name = module.name;
             float width = FontRenderers.info(msSemi, 18).getStringWidth(name);
 
-            DrawHelper.rectangle(
+            DrawHelper.drawShadow(
                     graphics.pose(),
                     moduleX - width - 10,
                     moduleY,
                     width + 8,
                     16,
                     4,
+                    10f,
+                    8,
                     currentTheme.colors[3]
             );
 
@@ -124,13 +127,15 @@ public class HUD extends Module {
         float width = FontRenderers.info(msSemi, 18).getStringWidth(coords) + 10;
         Theme currentTheme = themesUtil.getCurrentStyle();
 
-        DrawHelper.rectangle(
+        DrawHelper.drawShadow(
                 graphics.pose(),
                 coordsX,
                 coordsY,
                 width,
                 20,
                 4,
+                10f,
+                8,
                 currentTheme.colors[3]
         );
 

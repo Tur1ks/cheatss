@@ -161,6 +161,14 @@ public class ColorUtil {
         return (r << 16) + (g << 8) + (b << 0) + (a << 24);
     }
 
+    public static int toRGBA(float red, float green, float blue, float alpha) {
+        return ((int)(alpha * 255.0F) << 24) |
+                ((int)(red * 255.0F) << 16) |
+                ((int)(green * 255.0F) << 8) |
+                ((int)(blue * 255.0F));
+    }
+
+
     public static int toRGBA3(int r, int g, int b) {
         return (r << 16) + (g << 8) + (b << 0);
     }

@@ -338,4 +338,47 @@ public class DrawHelper implements Mine {
     }
 
 
+    public static void drawShadowedTriangle(PoseStack matrices, float x1, float y1, float x2, float y2, float x3, float y3, float shadowRadius, int shadowStrength, int color) {
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+
+        // Draw shadow layers
+        for (int i = 0; i < shadowStrength; i++) {
+            float spread = i * (shadowRadius / shadowStrength);
+            int shadowColor = reAlphaInt(color, (int)(255 * (1 - (float)i / shadowStrength) * 0.3f));
+
+            // Draw shadow triangle with offset
+            drawFilledTriangle(
+                    matrices,
+                    x1 - spread, y1 - spread,
+                    x2 - spread, y2 - spread,
+                    x3 - spread, y3 - spread,
+                    shadowColor
+            );
+        }
+
+        // Draw main triangle
+        drawFilledTriangle(matrices, x1, y1, x2, y2, x3, y3, color);
+
+        RenderSystem.disableBlend();
+    }
+
+
+    public static void drawFilledTriangle(PoseStack matrices, float x1, float y1, float x2, float y2, float x3, float y3, int color) {
+        Matrix4f matrix = matrices.last().pose();
+
+        RenderSystem.enableBlend();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.defaultBlendFunc();
+
+        BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+
+        bufferBuilder.vertex(matrix, x1, y1, 0.0F).color(color);
+        bufferBuilder.vertex(matrix, x2, y2, 0.0F).color(color);
+        bufferBuilder.vertex(matrix, x3, y3, 0.0F).color(color);
+
+        BufferUploader.drawWithShader(bufferBuilder.end());
+        RenderSystem.disableBlend();
+    }
+
 }

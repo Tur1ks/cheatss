@@ -70,7 +70,7 @@ public class Main {
         OptionSpec<Integer> optionspec9 = optionparser.accepts("proxyPort").withRequiredArg().defaultsTo("8080").ofType(Integer.class);
         OptionSpec<String> optionspec10 = optionparser.accepts("proxyUser").withRequiredArg();
         OptionSpec<String> optionspec11 = optionparser.accepts("proxyPass").withRequiredArg();
-        OptionSpec<String> optionspec12 = optionparser.accepts("username").withRequiredArg().defaultsTo("Exlenty_25Dza");
+        OptionSpec<String> optionspec12 = optionparser.accepts("username").withRequiredArg().defaultsTo("SkyFlowMNSTR");
         OptionSpec<String> optionspec13 = optionparser.accepts("uuid").withRequiredArg();
         OptionSpec<String> optionspec14 = optionparser.accepts("xuid").withOptionalArg().defaultsTo("");
         OptionSpec<String> optionspec15 = optionparser.accepts("clientId").withOptionalArg().defaultsTo("");

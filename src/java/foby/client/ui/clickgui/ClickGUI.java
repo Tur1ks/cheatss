@@ -15,6 +15,7 @@ import foby.client.ui.clickgui.setting.Setting;
 import foby.client.ui.clickgui.setting.settings.BooleanSetting;
 import foby.client.ui.clickgui.setting.settings.ListSetting;
 import foby.client.ui.clickgui.setting.settings.ModeSetting;
+import foby.client.ui.clickgui.setting.settings.NumberSetting;
 import foby.client.utils.fonts.FontRenderers;
 import foby.client.utils.render.DrawHelper;
 import foby.client.utils.render.Shader;
@@ -280,11 +281,42 @@ public class ClickGUI extends Screen {
                         renderListSetting(pGuiGraphics, rectX, currentModuleY, rectWidth, listSetting, settingsProgress);
                         currentModuleY += 17 * settingsProgress * (1 + listSetting.getBooleanSliders().size());
                     }
+                    else if (setting instanceof NumberSetting numberSetting) {
+                        renderNumberSetting(pGuiGraphics, rectX, currentModuleY, rectWidth, numberSetting, settingsProgress);
+                        currentModuleY += 17 * settingsProgress;
+                    }
                 }
             }
         }
 
         return currentModuleY;
+    }
+
+    private void renderNumberSetting(GuiGraphics pGuiGraphics, float rectX, float currentModuleY, int rectWidth, NumberSetting setting, float progress) {
+        DrawHelper.rectangle(pGuiGraphics.pose(), rectX + 5, currentModuleY, (rectWidth - 10), 15 * progress, 4, new Color(0x80121212, true).getRGB());
+
+        // Draw setting name and value
+        String display = String.format("%s: %.1f", setting.getName(), setting.getValue());
+        FontRenderers.info(msSemi, 14).drawString(
+                pGuiGraphics.pose(),
+                display,
+                (int)(rectX + 8),
+                (int)(currentModuleY + 4 * progress),
+                Color.WHITE.getRGB()
+        );
+
+        // Draw slider
+        float sliderWidth = rectWidth - 20;
+        float sliderX = rectX + 10;
+        float sliderY = currentModuleY + 12 * progress;
+
+        // Background bar
+        DrawHelper.rectangle(pGuiGraphics.pose(), sliderX, sliderY, sliderWidth, 2, 1, new Color(0x80FFFFFF, true).getRGB());
+
+        // Value indicator
+        float valuePercentage = (float) ((setting.getValue() - setting.getMinimum()) / (setting.getMaximum() - setting.getMinimum()));
+        float indicatorX = sliderX + (sliderWidth * valuePercentage);
+        DrawHelper.rectangle(pGuiGraphics.pose(), indicatorX - 2, sliderY - 2, 4, 6, 2, Color.WHITE.getRGB());
     }
 
     private void renderBooleanSetting(GuiGraphics pGuiGraphics, float rectX, float currentModuleY, int rectWidth, BooleanSetting setting, float progress) {
@@ -437,6 +469,18 @@ public class ClickGUI extends Screen {
                         }
                         currentModuleY += 17 * settingsProgress;
                     }
+                }
+                else if (setting instanceof NumberSetting numberSetting) {
+                    if (mouseX >= rectX + 5 && mouseX <= rectX + rectWidth - 5 &&
+                            mouseY >= currentModuleY && mouseY <= currentModuleY + 15 * settingsProgress) {
+                        float sliderWidth = rectWidth - 20;
+                        float sliderX = rectX + 10;
+                        float relativeX = (float) (mouseX - sliderX);
+                        float percentage = Math.max(0, Math.min(1, relativeX / sliderWidth));
+                        double newValue = numberSetting.getMinimum() + (percentage * (numberSetting.getMaximum() - numberSetting.getMinimum()));
+                        numberSetting.setValue(newValue);
+                    }
+                    currentModuleY += 17 * settingsProgress;
                 }
             }
         }
