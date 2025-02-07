@@ -318,4 +318,24 @@ public class DrawHelper implements Mine {
 
 
 
+
+    public void drawShadow(PoseStack matrices, float x, float y, float width, float height, float radius, float shadowRadius, int shadowStrength, int color) {
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+
+        // Draw multiple layers of shadows with decreasing alpha
+        for (int i = 0; i < shadowStrength; i++) {
+            float spread = i * (shadowRadius / shadowStrength);
+            int shadowColor = reAlphaInt(color, (int)(255 * (1 - (float)i / shadowStrength) * 0.3f));
+
+            rectangle(matrices, x - spread, y - spread, width + (spread * 2), height + (spread * 2), radius + spread, shadowColor);
+        }
+
+        // Draw main rectangle
+        rectangle(matrices, x, y, width, height, radius, color);
+
+        RenderSystem.disableBlend();
+    }
+
+
 }

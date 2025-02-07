@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import foby.client.module.Module;
 import foby.client.module.modules.ModuleManager;
 import foby.client.module.utils.Category;
@@ -16,6 +17,7 @@ import foby.client.ui.clickgui.setting.settings.ListSetting;
 import foby.client.ui.clickgui.setting.settings.ModeSetting;
 import foby.client.utils.fonts.FontRenderers;
 import foby.client.utils.render.DrawHelper;
+import foby.client.utils.render.Shader;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -40,6 +42,7 @@ public class ClickGUI extends Screen {
     private Map<Category, Float> targetSettingsHeights = new HashMap<>();
     private Map<Category, Boolean> isTransitioning = new HashMap<>();
 
+
     public ClickGUI(boolean isFullMenu) {
         super(isFullMenu ? GAME : PAUSED);
         themesUtil = new ThemesUtil();
@@ -51,6 +54,7 @@ public class ClickGUI extends Screen {
         int screenWidth = mc.getWindow().getScreenWidth();
         int screenHeight = mc.getWindow().getScreenHeight();
 
+        if (blur) {super.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);}
 
 
         // Рендер категорий

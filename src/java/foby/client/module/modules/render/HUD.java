@@ -6,16 +6,16 @@ import foby.client.module.Module;
 import foby.client.module.modules.ModuleManager;
 import foby.client.module.utils.Category;
 import foby.client.module.utils.ModuleAnnotation;
+import foby.client.themes.Theme;
 import foby.client.ui.clickgui.setting.settings.BooleanSetting;
-import foby.client.ui.clickgui.setting.settings.ModeSetting;
 import foby.client.utils.fonts.FontRenderers;
 import foby.client.utils.render.DrawHelper;
 import net.minecraft.client.gui.GuiGraphics;
 
-import java.awt.*;
 import java.util.Comparator;
 import java.util.List;
 
+import static foby.client.Foby.themesUtil;
 import static foby.client.utils.fonts.FontRenderers.msSemi;
 
 @ModuleAnnotation(name = "HUD", desc = "Отображение информации на экране", category = Category.RENDER)
@@ -23,10 +23,9 @@ public class HUD extends Module {
     BooleanSetting watermark = new BooleanSetting("Watermark", "Отображение ватермарки", true);
     BooleanSetting moduleList = new BooleanSetting("Module List", "Список активных модулей", true);
     BooleanSetting coordinates = new BooleanSetting("Coordinates", "Показывать координаты", true);
-    ModeSetting colorMode = new ModeSetting("Color", () -> true, "Rainbow", "Static", "Gradient");
 
     public HUD() {
-        addSettings(watermark, moduleList, coordinates, colorMode);
+        addSettings(watermark, moduleList, coordinates);
     }
 
     @EventHandler
@@ -48,29 +47,36 @@ public class HUD extends Module {
     }
 
     private void renderWatermark(GuiGraphics graphics) {
-        String clientName = "Foby Client";
+        String clientName = "SkyFlow Client";
         float watermarkX = 5;
         float watermarkY = 5;
         float width = FontRenderers.info(msSemi, 20).getStringWidth(clientName) + 10;
+        Theme currentTheme = themesUtil.getCurrentStyle();
 
-        DrawHelper.rectangle(
+        // Draw shadow
+        DrawHelper.drawShadow(
                 graphics.pose(),
                 watermarkX,
                 watermarkY,
                 width,
                 20,
                 4,
-                new Color(0, 0, 0, 160).getRGB()
+                10f, // Shadow radius
+                8,   // Shadow strength
+                currentTheme.colors[3]
         );
 
+
+        // Draw text
         FontRenderers.info(msSemi, 20).drawString(
                 graphics.pose(),
                 clientName,
                 (int) watermarkX + 5,
                 (int) watermarkY + 5,
-                getColor()
+                currentTheme.colors[1]
         );
     }
+
 
     private void renderModuleList(GuiGraphics graphics) {
         List<Module> enabledModules = ModuleManager.getModules().stream()
@@ -81,6 +87,7 @@ public class HUD extends Module {
 
         float moduleX = mc.getWindow().getGuiScaledWidth() - 5;
         float moduleY = 5;
+        Theme currentTheme = themesUtil.getCurrentStyle();
 
         for (Module module : enabledModules) {
             String name = module.name;
@@ -93,7 +100,7 @@ public class HUD extends Module {
                     width + 8,
                     16,
                     4,
-                    new Color(0, 0, 0, 160).getRGB()
+                    currentTheme.colors[3]
             );
 
             FontRenderers.info(msSemi, 18).drawString(
@@ -101,7 +108,7 @@ public class HUD extends Module {
                     name,
                     (int) (moduleX - width - 6),
                     (int) moduleY + 4,
-                    getColor()
+                    currentTheme.colors[1]
             );
 
             moduleY += 18;
@@ -115,6 +122,7 @@ public class HUD extends Module {
         float coordsX = 5;
         float coordsY = mc.getWindow().getGuiScaledHeight() - 25;
         float width = FontRenderers.info(msSemi, 18).getStringWidth(coords) + 10;
+        Theme currentTheme = themesUtil.getCurrentStyle();
 
         DrawHelper.rectangle(
                 graphics.pose(),
@@ -123,7 +131,7 @@ public class HUD extends Module {
                 width,
                 20,
                 4,
-                new Color(0, 0, 0, 160).getRGB()
+                currentTheme.colors[3]
         );
 
         FontRenderers.info(msSemi, 18).drawString(
@@ -131,35 +139,7 @@ public class HUD extends Module {
                 coords,
                 (int) coordsX + 5,
                 (int) coordsY + 6,
-                getColor()
+                currentTheme.colors[1]
         );
-    }
-
-    private int getColor() {
-        switch (colorMode.getMode()) {
-            case "Rainbow":
-                return getRainbowColor();
-            case "Gradient":
-                return getGradientColor();
-            default:
-                return Color.WHITE.getRGB();
-        }
-    }
-
-    private int getRainbowColor() {
-        float hue = (System.currentTimeMillis() % 3000) / 3000f;
-        return Color.HSBtoRGB(hue, 1, 1);
-    }
-
-    private int getGradientColor() {
-        long time = System.currentTimeMillis();
-        float pos = (time % 2000) / 1000f;
-        if (pos > 1) pos = 2 - pos;
-
-        return new Color(
-                (int) (pos * 255),
-                100,
-                255 - (int) (pos * 255)
-        ).getRGB();
     }
 }
