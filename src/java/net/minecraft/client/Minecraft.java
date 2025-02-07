@@ -740,6 +740,7 @@ public class Minecraft extends ReentrantBlockableEventLoop<Runnable> implements 
 
     public void run() {
         WindowStyle.setAcrylicEffect(this.getWindow().getWindow());
+        WindowStyle.setDarkMode(this.getWindow().getWindow());
 
 
         this.gameThread = Thread.currentThread();

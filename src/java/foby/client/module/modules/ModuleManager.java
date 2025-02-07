@@ -8,6 +8,7 @@ import foby.client.module.modules.render.Arrows;
 import foby.client.module.modules.render.ESP;
 import foby.client.module.modules.render.HUD;
 import foby.client.module.modules.render.Test;
+import foby.client.module.modules.util.ItemScroller;
 import lombok.Getter;
 
 import java.util.Arrays;
@@ -26,6 +27,9 @@ public class ModuleManager {
     public ESP esp;
     public Arrows arrows;
 
+    //util
+    public ItemScroller itemScroller;
+
     public ModuleManager() {
         modules.addAll(Arrays.asList(
                 hud = new HUD(),
@@ -33,7 +37,8 @@ public class ModuleManager {
                 aura = new Aura(),
                 speed = new Speed(),
                 esp = new ESP(),
-                arrows = new Arrows()
+                arrows = new Arrows(),
+                itemScroller = new ItemScroller()
         ));
     }
 
