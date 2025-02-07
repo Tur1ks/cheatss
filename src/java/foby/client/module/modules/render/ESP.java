@@ -1,183 +1,284 @@
 package foby.client.module.modules.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import foby.client.event.EventHandler;
-import foby.client.event.events.impl.RenderEvent3D;
+import foby.client.event.events.impl.RenderEvent2D;
 import foby.client.module.Module;
 import foby.client.module.utils.Category;
 import foby.client.module.utils.ModuleAnnotation;
+import foby.client.themes.Theme;
 import foby.client.ui.clickgui.setting.settings.BooleanSetting;
-import foby.client.ui.clickgui.setting.settings.ModeSetting;
-import net.minecraft.client.renderer.GameRenderer;
+import foby.client.utils.fonts.FontRenderers;
+import foby.client.utils.render.DrawHelper;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.scores.Team;
 import org.joml.Matrix4f;
-
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
+import org.joml.Vector2f;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
 
 import static foby.client.Foby.mc;
+import static foby.client.Foby.themesUtil;
+import static foby.client.utils.fonts.FontRenderers.msSemi;
 
-@ModuleAnnotation(name = "ESP", desc = "Renders entities through walls", category = Category.RENDER)
+@ModuleAnnotation(name = "ESP", desc = "2D Player ESP", category = Category.RENDER)
 public class ESP extends Module {
-    private final BooleanSetting players = new BooleanSetting("Players", "Show players", true);
-    private final ModeSetting mode = new ModeSetting("Mode", () -> true, "Box", "2D", "Outline");
-    private final BooleanSetting showHealth = new BooleanSetting("Health", "Show entity health", true);
+    private final BooleanSetting showHealth = new BooleanSetting("Health", "Show health value", true);
+    private final BooleanSetting showDistance = new BooleanSetting("Distance", "Show distance", true);
+
+    private static final float MAX_RENDER_DISTANCE = 64.0f;
+    private static final float MIN_SCALE = 0.5f;
+    private static final float MAX_SCALE = 1.5f;
 
     public ESP() {
-        addSettings(players, mode, showHealth);
+        addSettings(showHealth, showDistance);
     }
 
     @EventHandler
-    public void onRender3D(RenderEvent3D event) {
+    public void onRender2D(RenderEvent2D event) {
         if (mc.level == null || mc.player == null) return;
 
-        List<Entity> entities = new ArrayList<>();
+        mc.level.players().forEach(player -> {
+            if (player != mc.player && player.getTeam() != null) {
+                player.getTeam().setNameTagVisibility(Team.Visibility.NEVER);
+            }
+        });
+        mc.level.entitiesForRendering().forEach(entity -> {
+            if (entity instanceof ArmorStand) {
+                entity.setCustomNameVisible(false);
+                entity.setCustomName(null);
+            }
+        });
+
+        GuiGraphics graphics = event.getGuiGraphics();
+        PoseStack poseStack = graphics.pose();
+
         for (Entity entity : mc.level.entitiesForRendering()) {
-            if (shouldRenderESP(entity)) {
-                entities.add(entity);
+            if (!(entity instanceof Player player) || player == mc.player) continue;
+
+            double distance = mc.player.distanceTo(player);
+            if (distance > MAX_RENDER_DISTANCE) continue;
+
+            Vector2f screenPos = worldToScreen(entity);
+            if (screenPos == null) continue;
+
+            float scale = calculateScale(distance);
+
+            poseStack.pushPose();
+            poseStack.translate(screenPos.x, screenPos.y, 0);
+            poseStack.scale(scale, scale, 1.0f);
+            poseStack.translate(-screenPos.x, -screenPos.y, 0);
+
+            renderNametag(poseStack, player, screenPos);
+            if (showHealth.get()) {
+                renderHealthBar(poseStack, player, screenPos);
             }
-        }
-
-        for (Entity entity : entities) {
-            double x = entity.xOld + (entity.getX() - entity.xOld) * event.getPartialTicks();
-            double y = entity.yOld + (entity.getY() - entity.yOld) * event.getPartialTicks();
-            double z = entity.zOld + (entity.getZ() - entity.zOld) * event.getPartialTicks();
-
-            Vec3 renderPos = new Vec3(x, y, z);
-            AABB box = entity.getBoundingBox()
-                    .move(-entity.getX(), -entity.getY(), -entity.getZ())
-                    .move(renderPos);
-
-            Color color = getEntityColor(entity);
-
-            switch (mode.getMode()) {
-                case "Box" -> renderBox(event.getPoseStack(), event.getMatrix4f(), box, color);
-                case "2D" -> render2D(event.getPoseStack(), event.getMatrix4f(), box, color);
-                case "Outline" -> renderOutline(event.getPoseStack(), event.getMatrix4f(), box, color);
+            if (showDistance.get()) {
+                renderDistance(poseStack, player, screenPos);
             }
 
-            if (showHealth.get() && entity instanceof Player player) {
-                renderHealthBar(event.getPoseStack(), event.getMatrix4f(), box, player);
-            }
+            poseStack.popPose();
         }
     }
 
-    private boolean shouldRenderESP(Entity entity) {
-        if (entity == mc.player) return false;
-        return entity instanceof Player && players.get();
-    }
+    private float calculateScale(double distance) {
+        // Базовый скейл от дистанции
+        float scale = (float) Math.max(MIN_SCALE,
+                1.0f - (distance / MAX_RENDER_DISTANCE) * (1.0f - MIN_SCALE));
 
-    private Color getEntityColor(Entity entity) {
-        if (entity instanceof Player) {
-            return new Color(255, 0, 0, 150);
+        // Оптифайн зум
+        if (mc.options.fov().get() < 30) { // Сильный зум
+            scale *= 2.5f;
+        } else if (mc.options.fov().get() < 50) { // Средний зум
+            scale *= 1.8f;
+        } else if (mc.options.fov().get() < 70) { // Слабый зум
+            scale *= 1.3f;
         }
-        return new Color(255, 255, 255, 150);
+
+        // Состояния игрока
+        if (mc.player.isSprinting()) {
+            scale *= 0.85f; // Уменьшаем при спринте
+        }
+        if (mc.player.isFallFlying()) {
+            scale *= 0.7f; // Сильнее уменьшаем при полёте
+        }
+        if (mc.player.isSwimming()) {
+            scale *= 0.9f; // Уменьшаем при плавании
+        }
+        if (mc.player.isCrouching()) {
+            scale *= 1.2f; // Увеличиваем при присяде
+        }
+
+        // Финальное ограничение
+        return Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale));
     }
 
-    private void renderBox(PoseStack poseStack, Matrix4f matrix, AABB box, Color color) {
-        float minX = (float) box.minX;
-        float minY = (float) box.minY;
-        float minZ = (float) box.minZ;
-        float maxX = (float) box.maxX;
-        float maxY = (float) box.maxY;
-        float maxZ = (float) box.maxZ;
+    private Vector2f worldToScreen(Entity entity) {
+        Vec3 pos = entity.position().add(0, entity.getBbHeight() + 0.5f, 0);
 
-        // Bottom
-        drawLine(poseStack, matrix, minX, minY, minZ, maxX, minY, minZ, color);
-        drawLine(poseStack, matrix, maxX, minY, minZ, maxX, minY, maxZ, color);
-        drawLine(poseStack, matrix, maxX, minY, maxZ, minX, minY, maxZ, color);
-        drawLine(poseStack, matrix, minX, minY, maxZ, minX, minY, minZ, color);
+        // Player state position adjustments
+        if (entity instanceof Player player) {
+            if (player.isFallFlying()) {
+                pos = pos.add(0, -0.8, 0);
+            }
+            if (player.isCrouching()) {
+                pos = pos.add(0, 0.35, 0);
+            }
+            if (player.isSwimming()) {
+                pos = pos.add(0, 0.4, 0);
+            }
+            if (player.isSprinting()) {
+                pos = pos.add(0, 0.2, 0);
+            }
+        }
 
-        // Top
-        drawLine(poseStack, matrix, minX, maxY, minZ, maxX, maxY, minZ, color);
-        drawLine(poseStack, matrix, maxX, maxY, minZ, maxX, maxY, maxZ, color);
-        drawLine(poseStack, matrix, maxX, maxY, maxZ, minX, maxY, maxZ, color);
-        drawLine(poseStack, matrix, minX, maxY, maxZ, minX, maxY, minZ, color);
+        Vec3 camera = mc.gameRenderer.getMainCamera().getPosition();
 
-        // Connections
-        drawLine(poseStack, matrix, minX, minY, minZ, minX, maxY, minZ, color);
-        drawLine(poseStack, matrix, maxX, minY, minZ, maxX, maxY, minZ, color);
-        drawLine(poseStack, matrix, maxX, minY, maxZ, maxX, maxY, maxZ, color);
-        drawLine(poseStack, matrix, minX, minY, maxZ, minX, maxY, maxZ, color);
+        // FOV adjustments
+        float fov = mc.options.fov().get();
+        float adjustedFov = fov;
+        if (fov < 30) { // Strong zoom
+            adjustedFov *= 0.4f;
+        } else if (fov < 50) { // Medium zoom
+            adjustedFov *= 0.6f;
+        } else if (fov < 70) { // Light zoom
+            adjustedFov *= 0.8f;
+        }
+
+        Matrix4f viewMatrix = new Matrix4f();
+        float yaw = mc.gameRenderer.getMainCamera().getYRot();
+        float pitch = mc.gameRenderer.getMainCamera().getXRot();
+
+        viewMatrix.identity();
+        viewMatrix.rotate((float) Math.toRadians(pitch), new Vector3f(1, 0, 0));
+        viewMatrix.rotate((float) Math.toRadians(yaw + 180), new Vector3f(0, 1, 0));
+        viewMatrix.translate(new Vector3f(
+                (float) -camera.x,
+                (float) -camera.y,
+                (float) -camera.z
+        ));
+
+        Matrix4f projectionMatrix = new Matrix4f();
+        float aspectRatio = (float) mc.getWindow().getGuiScaledWidth() / mc.getWindow().getGuiScaledHeight();
+
+        projectionMatrix.identity();
+        projectionMatrix.perspective((float) Math.toRadians(adjustedFov), aspectRatio, 0.05f, 1000.0f);
+
+        Vector4f vector = new Vector4f(
+                (float) pos.x,
+                (float) pos.y,
+                (float) pos.z,
+                1.0f
+        );
+
+        vector.mul(viewMatrix);
+        vector.mul(projectionMatrix);
+
+        if (vector.w <= 0.0f) return null;
+
+        vector.mul(1.0f / vector.w);
+
+        float screenX = (vector.x * 0.5f + 0.5f) * mc.getWindow().getGuiScaledWidth();
+        float screenY = (1.0f - (vector.y * 0.5f + 0.5f)) * mc.getWindow().getGuiScaledHeight();
+
+        return new Vector2f(screenX, screenY);
     }
 
-    private void render2D(PoseStack poseStack, Matrix4f matrix, AABB box, Color color) {
-        float minX = (float) box.minX;
-        float minY = (float) box.minY;
-        float minZ = (float) box.minZ;
-        float maxX = (float) box.maxX;
-        float maxY = (float) box.maxY;
+    private void renderNametag(PoseStack poseStack, Player player, Vector2f pos) {
+        String name = player.getGameProfile().getName();
+        float textWidth = FontRenderers.info(msSemi, 18).getStringWidth(name);
+        Theme currentTheme = themesUtil.getCurrentStyle();
 
-        drawLine(poseStack, matrix, minX, minY, minZ, maxX, minY, minZ, color);
-        drawLine(poseStack, matrix, maxX, minY, minZ, maxX, maxY, minZ, color);
-        drawLine(poseStack, matrix, maxX, maxY, minZ, minX, maxY, minZ, color);
-        drawLine(poseStack, matrix, minX, maxY, minZ, minX, minY, minZ, color);
+        DrawHelper.drawShadow(
+                poseStack,
+                pos.x - textWidth / 2 - 4,
+                pos.y - 22,
+                textWidth + 8,
+                16,
+                4,
+                10f,
+                8,
+                currentTheme.colors[3]
+        );
+
+        FontRenderers.info(msSemi, 18).drawString(
+                poseStack,
+                name,
+                (int)(pos.x - textWidth / 2),
+                (int)(pos.y - 20),
+                currentTheme.colors[1]
+        );
     }
 
-    private void renderOutline(PoseStack poseStack, Matrix4f matrix, AABB box, Color color) {
-        float minX = (float) box.minX;
-        float minY = (float) box.minY;
-        float minZ = (float) box.minZ;
-        float maxX = (float) box.maxX;
-        float maxY = (float) box.maxY;
-        float maxZ = (float) box.maxZ;
-
-        float width = (maxX - minX) * 0.2f;
-        float height = (maxY - minY) * 0.2f;
-
-        // Corners
-        drawLine(poseStack, matrix, minX, minY, minZ, minX + width, minY, minZ, color);
-        drawLine(poseStack, matrix, minX, minY, minZ, minX, minY + height, minZ, color);
-
-        drawLine(poseStack, matrix, maxX, minY, minZ, maxX - width, minY, minZ, color);
-        drawLine(poseStack, matrix, maxX, minY, minZ, maxX, minY + height, minZ, color);
-
-        drawLine(poseStack, matrix, minX, maxY, minZ, minX + width, maxY, minZ, color);
-        drawLine(poseStack, matrix, minX, maxY, minZ, minX, maxY - height, minZ, color);
-
-        drawLine(poseStack, matrix, maxX, maxY, minZ, maxX - width, maxY, minZ, color);
-        drawLine(poseStack, matrix, maxX, maxY, minZ, maxX, maxY - height, minZ, color);
-    }
-
-    private void renderHealthBar(PoseStack poseStack, Matrix4f matrix, AABB box, Player player) {
+    private void renderHealthBar(PoseStack poseStack, Player player, Vector2f pos) {
         float health = player.getHealth();
         float maxHealth = player.getMaxHealth();
         float healthPercent = health / maxHealth;
+        String healthText = String.format("%.1f HP", health);
+        float textWidth = FontRenderers.info(msSemi, 16).getStringWidth(healthText);
+        Theme currentTheme = themesUtil.getCurrentStyle();
 
-        Color healthColor = new Color(
-                (int) (255 * (1 - healthPercent)),
-                (int) (255 * healthPercent),
-                0,
-                200
+        DrawHelper.drawShadow(
+                poseStack,
+                pos.x - 20,
+                pos.y - 2,
+                40,
+                4,
+                2,
+                8f,
+                6,
+                currentTheme.colors[3]
         );
 
-        float barWidth = (float) (box.maxX - box.minX);
-        float barHeight = 0.1f;
-        float barY = (float) box.maxY + 0.2f;
+        DrawHelper.drawShadow(
+                poseStack,
+                pos.x - 20,
+                pos.y - 2,
+                40 * healthPercent,
+                4,
+                2,
+                8f,
+                6,
+                currentTheme.colors[1]
+        );
 
-        drawLine(poseStack, matrix,
-                (float) box.minX, barY, (float) box.minZ,
-                (float) box.minX + (barWidth * healthPercent), barY, (float) box.minZ,
-                healthColor);
+        FontRenderers.info(msSemi, 16).drawString(
+                poseStack,
+                healthText,
+                (int)(pos.x - textWidth / 2),
+                (int)(pos.y + 4),
+                currentTheme.colors[1]
+        );
     }
 
-    private void drawLine(PoseStack poseStack, Matrix4f matrix, float x1, float y1, float z1, float x2, float y2, float z2, Color color) {
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder(VertexFormat.Mode.DEBUG_LINE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+    private void renderDistance(PoseStack poseStack, Player player, Vector2f pos) {
+        double distance = mc.player.distanceTo(player);
+        String text = String.format("%.1fm", distance);
+        float textWidth = FontRenderers.info(msSemi, 16).getStringWidth(text);
+        Theme currentTheme = themesUtil.getCurrentStyle();
 
-        int packedColor = color.getRGB();
+        DrawHelper.drawShadow(
+                poseStack,
+                pos.x - textWidth / 2 - 4,
+                pos.y + 14,
+                textWidth + 8,
+                14,
+                3,
+                8f,
+                6,
+                currentTheme.colors[3]
+        );
 
-        bufferBuilder.vertex(matrix, x1, y1, z1)
-                .color(packedColor);
-        bufferBuilder.vertex(matrix, x2, y2, z2)
-                .color(packedColor);
-
-        BufferUploader.drawWithShader(bufferBuilder.end());
+        FontRenderers.info(msSemi, 16).drawString(
+                poseStack,
+                text,
+                (int)(pos.x - textWidth / 2),
+                (int)(pos.y + 16),
+                currentTheme.colors[1]
+        );
     }
-
 }
