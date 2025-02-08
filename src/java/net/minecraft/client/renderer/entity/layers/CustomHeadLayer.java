@@ -121,13 +121,19 @@ public class CustomHeadLayer<T extends LivingEntity, M extends EntityModel<T> & 
             pPoseStack.popPose();
         }
 
-        if (ModuleManager.getModule(ChinaHat.class).isEnabled()) {
+        if (ModuleManager.getModule(ChinaHat.class).isEnabled() &&
+                pLivingEntity == mc.player) {
             float hatWidth = 1f;
             float hatHeight = 0.5f;
             float translateHatInY = 0.2f;
             float rotationY = (float) MathUtils.interpolate(pHeadPitch, pLivingEntity.xRotO, pPartialTicks);
-            java.awt.Color upColor = new Color(0,0,0,100);
-            java.awt.Color downColor = new Color(255,255,255,100);
+
+            Theme currentTheme = themesUtil.getCurrentStyle();
+            java.awt.Color upColor = new Color(currentTheme.colors[0]);
+            java.awt.Color downColor = new Color(currentTheme.colors[3]);
+            upColor = new Color(upColor.getRed(), upColor.getGreen(), upColor.getBlue(), 100);
+            downColor = new Color(downColor.getRed(), downColor.getGreen(), downColor.getBlue(), 100);
+
             Tesselator tessellator = Tesselator.getInstance();
             RenderSystem.enableDepthTest();
             RenderSystem.setShader(GameRenderer::getPositionColorShader);
@@ -152,8 +158,7 @@ public class CustomHeadLayer<T extends LivingEntity, M extends EntityModel<T> & 
             buffer.addVertex(poseStack.last().pose(), 0, hatHeight, 0).setColor(downColor.getRGB());
             for (int i = 0; i <= 360; i++) {
                 float angle = (float) Math.toRadians(i);
-                java.awt.Color color2 = upColor;
-                buffer.addVertex(poseStack.last().pose(), Mth.cos(angle) * hatWidth, 0, Mth.sin(angle) * hatWidth).setColor(color2.getRGB());
+                buffer.addVertex(poseStack.last().pose(), Mth.cos(angle) * hatWidth, 0, Mth.sin(angle) * hatWidth).setColor(upColor.getRGB());
             }
             tessellator.draw(buffer);
             poseStack.popPose();

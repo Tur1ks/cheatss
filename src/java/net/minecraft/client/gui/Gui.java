@@ -12,6 +12,8 @@ import javax.annotation.Nullable;
 
 import foby.client.event.EventManager;
 import foby.client.event.events.impl.RenderEvent2D;
+import foby.client.module.modules.ModuleManager;
+import foby.client.module.modules.render.Crosshair;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.AttackIndicatorStatus;
@@ -375,7 +377,7 @@ public class Gui {
     }
 
     private void renderCrosshair(GuiGraphics p_282828_, DeltaTracker p_343490_) {
-
+        if (ModuleManager.getModule(Crosshair.class).isEnabled()) return;
         Options options = this.minecraft.options;
         if (options.getCameraType().isFirstPerson() && (this.minecraft.gameMode.getPlayerMode() != GameType.SPECTATOR || this.canRenderCrosshairForSpectator(this.minecraft.hitResult))) {
             RenderSystem.enableBlend();

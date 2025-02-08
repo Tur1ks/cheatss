@@ -231,7 +231,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
     private LivingEntity lastHurtMob;
     private int lastHurtMobTimestamp;
     private float speed;
-    private int noJumpDelay;
+    public int noJumpDelay;
     private float absorptionAmount;
     protected ItemStack useItem = ItemStack.EMPTY;
     protected int useItemRemaining;

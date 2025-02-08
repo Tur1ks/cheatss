@@ -5,7 +5,9 @@ import foby.client.module.Module;
 import foby.client.module.modules.combat.Aura;
 import foby.client.module.modules.movement.*;
 import foby.client.module.modules.render.*;
+import foby.client.module.modules.util.AutoFish;
 import foby.client.module.modules.util.ItemScroller;
+import foby.client.module.modules.util.NoDelay;
 import lombok.Getter;
 
 import java.util.Arrays;
@@ -23,6 +25,12 @@ public class ModuleManager {
     public HUD hud;
     public ESP esp;
     public Arrows arrows;
+    public Sprint sprint;
+    public Inventory inventory;
+    public FullBright fullBright;
+    public Crosshair crosshair;
+    public AutoFish autoFish;
+    public NoDelay noDelay;
 
     //Move
     public Timer timer;
@@ -43,7 +51,13 @@ public class ModuleManager {
                 arrows = new Arrows(),
                 itemScroller = new ItemScroller(),
                 timer = new Timer(),
-                chinaHat = new ChinaHat()
+                chinaHat = new ChinaHat(),
+                sprint = new Sprint(),
+                inventory = new Inventory(),
+                fullBright = new FullBright(),
+                crosshair = new Crosshair(),
+                autoFish = new AutoFish(),
+                noDelay = new NoDelay()
         ));
     }
 
