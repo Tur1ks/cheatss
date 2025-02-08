@@ -5,14 +5,20 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Axis;
 import foby.client.utils.color.ColorUtil;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import foby.client.utils.Mine;
 import lombok.experimental.UtilityClass;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
+
 
 import java.awt.*;
 import java.util.Objects;
@@ -381,4 +387,44 @@ public class DrawHelper implements Mine {
         RenderSystem.disableBlend();
     }
 
+    public static void drawEntity(GuiGraphics graphics, float x, float y, int size, LivingEntity entity) {
+        float f = (float)Math.atan((x / 40.0F));
+        float f1 = (float)Math.atan((y / 40.0F));
+        PoseStack poseStack = graphics.pose();
+        poseStack.pushPose();
+        poseStack.translate(x, y, 1050.0F);
+        poseStack.scale(1.0F, 1.0F, -1.0F);
+        poseStack.translate(0.0F, 0.0F, 1000.0F);
+        poseStack.scale((float)size, (float)size, (float)size);
+        Quaternionf quaternion = new Quaternionf().rotationZ((float)Math.PI);
+        Quaternionf quaternion1 = new Quaternionf().rotationX(f1 * 20.0F * ((float)Math.PI / 180F));
+        quaternion.mul(quaternion1);
+        poseStack.mulPose(quaternion);
+        float f2 = entity.yBodyRot;
+        float f3 = entity.getYRot();
+        float f4 = entity.getXRot();
+        float f5 = entity.yHeadRotO;
+        float f6 = entity.yHeadRot;
+        entity.yBodyRot = 180.0F + f * 20.0F;
+        entity.setYRot(180.0F + f * 40.0F);
+        entity.setXRot(-f1 * 20.0F);
+        entity.yHeadRot = entity.getYRot();
+        entity.yHeadRotO = entity.getYRot();
+        EntityRenderDispatcher entityrenderdispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
+        quaternion1.conjugate();
+        entityrenderdispatcher.overrideCameraOrientation(quaternion1);
+        entityrenderdispatcher.setRenderShadow(false);
+        MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
+        RenderSystem.runAsFancy(() -> {
+            entityrenderdispatcher.render(entity, 0.0D, 0.0D, 0.0D, 0.0F, 1.0F, poseStack, bufferSource, 15728880);
+        });
+        bufferSource.endBatch();
+        entityrenderdispatcher.setRenderShadow(true);
+        entity.yBodyRot = f2;
+        entity.setYRot(f3);
+        entity.setXRot(f4);
+        entity.yHeadRotO = f5;
+        entity.yHeadRot = f6;
+        poseStack.popPose();
+    }
 }

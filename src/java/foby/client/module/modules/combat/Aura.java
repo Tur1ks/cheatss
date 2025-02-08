@@ -39,6 +39,7 @@ public class Aura extends Module {
         }
 
         target = findTarget();
+        //System.out.println("onUpdate - Found target: " + (target != null ? target.getName().getString() : "null"));
 
         if (target != null && isInRange(player, target)) {
             updateRotation(true, 70, 30);
@@ -49,12 +50,14 @@ public class Aura extends Module {
         }
     }
 
+
+
     private boolean shouldPlayerFalling() {
         LocalPlayer player = Minecraft.getInstance().player;
         return player.fallDistance > 0 && !player.isInWater() && !player.isInLava() && !player.isFallFlying() && !player.onGround();
     }
 
-    private LivingEntity findTarget() {
+    public LivingEntity findTarget() {
         List<Entity> potentialTargets = new ArrayList<>();
         for (Entity entity : Minecraft.getInstance().level.entitiesForRendering()) {
             if (entity instanceof LivingEntity livingEntity && isValidTarget(livingEntity) && entity != Minecraft.getInstance().player) {
@@ -94,7 +97,9 @@ public class Aura extends Module {
 
 
     public LivingEntity getCurrentTarget() {
-        return findTarget();
+        LivingEntity currentTarget = findTarget();
+        System.out.println("getCurrentTarget called - Current target: " + (currentTarget != null ? currentTarget.getName().getString() : "null"));
+        return currentTarget;
     }
 
     private boolean isInRange(LocalPlayer player, Entity target) {
