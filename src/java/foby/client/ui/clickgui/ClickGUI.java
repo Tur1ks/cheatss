@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import foby.client.module.Module;
 import foby.client.module.modules.ModuleManager;
@@ -22,6 +23,7 @@ import foby.client.utils.render.Shader;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import org.lwjgl.glfw.GLFW;
 
 import static foby.client.Foby.mc;
 import static foby.client.Foby.themesUtil;
@@ -42,6 +44,8 @@ public class ClickGUI extends Screen {
     private Map<Category, Float> currentSettingsHeights = new HashMap<>();
     private Map<Category, Float> targetSettingsHeights = new HashMap<>();
     private Map<Category, Boolean> isTransitioning = new HashMap<>();
+    private Module bindingModule = null;
+    private boolean isBinding = false;
 
 
     public ClickGUI(boolean isFullMenu) {
@@ -184,6 +188,23 @@ public class ClickGUI extends Screen {
         return handleRegularCategories(mouseX, mouseY, button);
     }
 
+    private void renderKeyBind(GuiGraphics pGuiGraphics, Module module, float rectX, float currentModuleY, int rectWidth, float heightProgress) {
+        String bindText = isBinding && module == bindingModule ?
+                "Press a key..." :
+                "Bind: " + (module.getKey() == -1 ? "None" : module.getKey());
+
+        float bindTextWidth = FontRenderers.info(msSemi, 14).getStringWidth(bindText);
+        float bindTextX = rectX + rectWidth - bindTextWidth - 10;
+
+        FontRenderers.info(msSemi, 14).drawString(
+                pGuiGraphics.pose(),
+                bindText,
+                (int) bindTextX,
+                (int) (currentModuleY + 4 * heightProgress),
+                Color.GRAY.getRGB()
+        );
+    }
+
     private void renderModules(GuiGraphics pGuiGraphics, int pMouseX, int pMouseY, List<Module> categoryModules, float rectX, float rectY, int rectWidth, int rectHeight) {
         if (!categoryModules.isEmpty()) {
             Category category = categoryModules.get(0).category;
@@ -230,26 +251,49 @@ public class ClickGUI extends Screen {
                     currentModuleY += 17 * heightProgress;
                 }
             }
+
         }
     }
 
     private void renderModule(GuiGraphics pGuiGraphics, int pMouseX, int pMouseY, Module module, float rectX, float currentModuleY, int rectWidth, float heightProgress) {
         String moduleName = module.name;
         int moduleTextWidth = (int) FontRenderers.info(msSemi, 15).getStringWidth(moduleName);
-        float moduleTextX = rectX + (rectWidth - moduleTextWidth) / 2f;
+        float moduleTextX = rectX + 10;
 
-        if (pMouseX >= rectX && pMouseX <= rectX + rectWidth && pMouseY >= currentModuleY && pMouseY <= currentModuleY + 15 * heightProgress) {
+        // Background hover effect
+        if (pMouseX >= rectX && pMouseX <= rectX + rectWidth &&
+                pMouseY >= currentModuleY && pMouseY <= currentModuleY + 15 * heightProgress) {
+            DrawHelper.rectangle(pGuiGraphics.pose(), rectX + 5, currentModuleY, rectWidth - 10, 15 * heightProgress, 4, new Color(0x40FFFFFF, true).getRGB());
+
+            // Show description tooltip
             int descWidth = (int) FontRenderers.info(msSemi, 14).getStringWidth(module.desc);
             DrawHelper.rectangle(pGuiGraphics.pose(), 450, 28, descWidth + 10, 10, 4, new Color(0x3D3D3D).getRGB());
             FontRenderers.info(msSemi, 14).drawString(pGuiGraphics.pose(), module.desc, 455, 30, new Color(0x80FFFFFF, true).getRGB());
         }
 
+        // Module name
         FontRenderers.info(msSemi, 15).drawString(
                 pGuiGraphics.pose(),
                 moduleName,
                 (int) moduleTextX,
-                (int) (currentModuleY + (1 - heightProgress) * 8.5f),
+                (int) (currentModuleY + 4 * heightProgress),
                 module.isEnabled() ? Color.WHITE.getRGB() : Color.GRAY.getRGB()
+        );
+
+        // Key bind display
+        String bindText = isBinding && module == bindingModule ?
+                "Press a key..." :
+                "[" + (module.getKey() == -1 ? "None" : InputConstants.getKey(module.getKey(), -1).getDisplayName().getString()) + "]";
+
+        float bindTextWidth = FontRenderers.info(msSemi, 14).getStringWidth(bindText);
+        float bindTextX = rectX + rectWidth - bindTextWidth - 10;
+
+        FontRenderers.info(msSemi, 14).drawString(
+                pGuiGraphics.pose(),
+                bindText,
+                (int) bindTextX,
+                (int) (currentModuleY + 4 * heightProgress),
+                new Color(0x80FFFFFF, true).getRGB()
         );
     }
 
@@ -486,4 +530,60 @@ public class ClickGUI extends Screen {
         }
         return currentModuleY;
     }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (isBinding && bindingModule != null) {
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                bindingModule.setKey(-1);
+            } else if (keyCode != GLFW.GLFW_KEY_UNKNOWN) {
+                bindingModule.setKey(keyCode);
+            }
+            isBinding = false;
+            bindingModule = null;
+            return true;
+        }
+
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            this.onClose();
+            return true;
+        }
+
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        int spacing = 500;
+        int xOffset = spacing;
+        int screenHeight = mc.getWindow().getScreenHeight();
+        List<Module> allModules = getAllModules();
+
+        for (Category category : categories) {
+            List<Module> categoryModules = getModulesForCategory(allModules, category);
+            float rectX = xOffset / 2f;
+            float rectY = (screenHeight - 20) / 14f;
+            float moduleRectY = rectY + 25;
+            float currentModuleY = moduleRectY + 5;
+            float heightProgress = currentHeights.get(category) / targetHeights.get(category);
+
+            for (Module module : categoryModules) {
+                if (mouseX >= rectX && mouseX <= rectX + 100 &&
+                        mouseY >= currentModuleY && mouseY <= currentModuleY + 15 * heightProgress) {
+                    bindingModule = module;
+                    isBinding = true;
+                    return true;
+                }
+
+                if (settingOpen && module == selectedModule) {
+                    currentModuleY += 17 * heightProgress + (module.settings != null ? calculateSettingsHeight(module) : 0);
+                } else {
+                    currentModuleY += 17 * heightProgress;
+                }
+            }
+            xOffset += spacing - 260;
+        }
+        return false;
+    }
+
 }

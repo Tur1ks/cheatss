@@ -22,6 +22,16 @@ public abstract class Module implements Mine {
     @Getter
     public boolean state, util;
 
+    private int key = -1; // Add this field
+
+    public int getKey() {
+        return key;
+    }
+
+    public void setKey(int key) {
+        this.key = key;
+    }
+
     public Module() {
         initializeProperties();
     }

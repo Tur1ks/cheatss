@@ -27,6 +27,9 @@ public class ModuleManager {
     public ESP esp;
     public Arrows arrows;
 
+    //Move
+    public Timer timer;
+
     //util
     public ItemScroller itemScroller;
 
@@ -38,7 +41,8 @@ public class ModuleManager {
                 speed = new Speed(),
                 esp = new ESP(),
                 arrows = new Arrows(),
-                itemScroller = new ItemScroller()
+                itemScroller = new ItemScroller(),
+                timer = new Timer()
         ));
     }
 

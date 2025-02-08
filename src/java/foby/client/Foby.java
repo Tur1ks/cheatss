@@ -38,9 +38,10 @@ public class Foby {
 
     public static void keyPress(int key) {
         if(mc.screen != null) return;
-        for (Module m : moduleManager.getFunctions()) {
-            if (m.bind == key) {
-                m.toggle();
+
+        for (Module module : moduleManager.getModules()) {
+            if (module.getKey() == key) {
+                module.toggle();
             }
         }
     }
