@@ -4,10 +4,7 @@ package foby.client.module.modules;
 import foby.client.module.Module;
 import foby.client.module.modules.combat.Aura;
 import foby.client.module.modules.movement.*;
-import foby.client.module.modules.render.Arrows;
-import foby.client.module.modules.render.ESP;
-import foby.client.module.modules.render.HUD;
-import foby.client.module.modules.render.Test;
+import foby.client.module.modules.render.*;
 import foby.client.module.modules.util.ItemScroller;
 import lombok.Getter;
 
@@ -30,6 +27,9 @@ public class ModuleManager {
     //Move
     public Timer timer;
 
+    //render
+    public ChinaHat chinaHat;
+
     //util
     public ItemScroller itemScroller;
 
@@ -42,7 +42,8 @@ public class ModuleManager {
                 esp = new ESP(),
                 arrows = new Arrows(),
                 itemScroller = new ItemScroller(),
-                timer = new Timer()
+                timer = new Timer(),
+                chinaHat = new ChinaHat()
         ));
     }
 

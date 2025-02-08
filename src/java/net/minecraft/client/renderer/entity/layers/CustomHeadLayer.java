@@ -1,18 +1,31 @@
 package net.minecraft.client.renderer.entity.layers;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Axis;
+
+import java.awt.*;
 import java.util.Map;
+
+import foby.client.module.modules.ModuleManager;
+import foby.client.module.modules.render.ChinaHat;
+import foby.client.themes.Theme;
+import foby.client.utils.color.ColorUtil;
+import foby.client.utils.math.MathUtils;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.HeadedModel;
 import net.minecraft.client.model.SkullModelBase;
 import net.minecraft.client.model.geom.EntityModelSet;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.SkullBlockRenderer;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.WalkAnimationState;
@@ -27,6 +40,9 @@ import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.world.level.block.AbstractSkullBlock;
 import net.minecraft.world.level.block.SkullBlock;
 
+import static foby.client.Foby.themesUtil;
+import static foby.client.utils.Mine.mc;
+
 public class CustomHeadLayer<T extends LivingEntity, M extends EntityModel<T> & HeadedModel> extends RenderLayer<T, M> {
     private final float scaleX;
     private final float scaleY;
@@ -39,7 +55,7 @@ public class CustomHeadLayer<T extends LivingEntity, M extends EntityModel<T> & 
     }
 
     public CustomHeadLayer(
-        RenderLayerParent<T, M> pRenderer, EntityModelSet pModelSet, float pScaleX, float pScaleY, float pScaleZ, ItemInHandRenderer pItemInHandRenderer
+            RenderLayerParent<T, M> pRenderer, EntityModelSet pModelSet, float pScaleX, float pScaleY, float pScaleZ, ItemInHandRenderer pItemInHandRenderer
     ) {
         super(pRenderer);
         this.scaleX = pScaleX;
@@ -50,16 +66,16 @@ public class CustomHeadLayer<T extends LivingEntity, M extends EntityModel<T> & 
     }
 
     public void render(
-        PoseStack pPoseStack,
-        MultiBufferSource pBuffer,
-        int pPackedLight,
-        T pLivingEntity,
-        float pLimbSwing,
-        float pLimbSwingAmount,
-        float pPartialTicks,
-        float pAgeInTicks,
-        float pNetHeadYaw,
-        float pHeadPitch
+            PoseStack pPoseStack,
+            MultiBufferSource pBuffer,
+            int pPackedLight,
+            T pLivingEntity,
+            float pLimbSwing,
+            float pLimbSwingAmount,
+            float pPartialTicks,
+            float pAgeInTicks,
+            float pNetHeadYaw,
+            float pHeadPitch
     ) {
         ItemStack itemstack = pLivingEntity.getItemBySlot(EquipmentSlot.HEAD);
         if (!itemstack.isEmpty()) {
@@ -103,6 +119,49 @@ public class CustomHeadLayer<T extends LivingEntity, M extends EntityModel<T> & 
             }
 
             pPoseStack.popPose();
+        }
+
+        if (ModuleManager.getModule(ChinaHat.class).isEnabled()) {
+            float hatWidth = 1f;
+            float hatHeight = 0.5f;
+            float translateHatInY = 0.2f;
+            float rotationY = (float) MathUtils.interpolate(pHeadPitch, pLivingEntity.xRotO, pPartialTicks);
+            java.awt.Color upColor = new Color(0,0,0,100);
+            java.awt.Color downColor = new Color(255,255,255,100);
+            Tesselator tessellator = Tesselator.getInstance();
+            RenderSystem.enableDepthTest();
+            RenderSystem.setShader(GameRenderer::getPositionColorShader);
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+            RenderSystem.disableTexture();
+            RenderSystem.enableBlend();
+            RenderSystem.blendFunc(770, 771);
+            RenderSystem.depthMask(true);
+            RenderSystem.disableCull();
+            RenderSystem.lineWidth(1f);
+            PoseStack poseStack = new PoseStack();
+            poseStack.last().pose().set(pPoseStack.last().pose());
+            poseStack.pushPose();
+            translateToHead(poseStack, false);
+            poseStack.translate(0.0F, translateHatInY, 0.0F);
+            poseStack.mulPose(Axis.YN.rotationDegrees(pNetHeadYaw));
+            poseStack.translate(0.0F, -hatHeight / 2.0F, 0.0F);
+            poseStack.mulPose(Axis.XN.rotationDegrees(rotationY));
+            poseStack.translate(0.0F, hatHeight / 2.0F, 0.0F);
+            poseStack.translate(0.0F, translateHatInY, 0.0F);
+            BufferBuilder buffer = tessellator.begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
+            buffer.addVertex(poseStack.last().pose(), 0, hatHeight, 0).setColor(downColor.getRGB());
+            for (int i = 0; i <= 360; i++) {
+                float angle = (float) Math.toRadians(i);
+                java.awt.Color color2 = upColor;
+                buffer.addVertex(poseStack.last().pose(), Mth.cos(angle) * hatWidth, 0, Mth.sin(angle) * hatWidth).setColor(color2.getRGB());
+            }
+            tessellator.draw(buffer);
+            poseStack.popPose();
+            RenderSystem.disableDepthTest();
+            RenderSystem.disableBlend();
+            RenderSystem.depthMask(true);
+            RenderSystem.enableTexture();
+            RenderSystem.enableCull();
         }
     }
 
